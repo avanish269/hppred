@@ -24,8 +24,10 @@ def load_house_data():
 
 housing=load_house_data()
 housing.info()
+number=len(housing)
+print(number)
 #print(housing["ocean_proximity"].value_counts())
-#print(housing.describe())
+print(housing.describe())
 #housing.hist(bins=50, figsize=(20,15))
 #plt.show()
 #housingwithid=housing.reset_index()

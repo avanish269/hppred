@@ -10,10 +10,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error as rmse
+from sklearn.metrics import r2_score
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor as rfr
 from sklearn.model_selection import cross_val_score as cvs
 from sklearn.model_selection import GridSearchCV as gsc
+from scipy import stats
 
 class ComAttAdder(BaseEstimator, TransformerMixin):
     def __init__(self, add_bedperroom=True):
@@ -47,6 +49,8 @@ for train_index, test_index in split.split(housing, housing["income_cat"]):
 for set_ in (train_set, test_set):
     set_.drop("income_cat", axis=1, inplace=True)
 
+number=len(housing)
+print(number)
 housing=train_set.copy()
 housing["roomsperhousehold"]=housing["total_rooms"]/housing["households"]
 housing["bedperroom"]=housing["total_bedrooms"]/housing["total_rooms"]
@@ -128,3 +132,28 @@ print(gs.best_estimator_)
 cres=gs.cv_results_
 for ms, ps in zip(cres["mean_test_score"],cres["params"]):
     print(np.sqrt(-ms), ps)
+
+fi=gs.best_estimator_.feature_importances_
+print(fi)
+ea=["roomsperhousehold", "popperhouse", "bedperroom "]
+ce=fp.named_transformers_["cat"]
+c1hotatt=list(ce.categories_[0])
+attr=nattr+ea+c1hotatt
+print(sorted(zip(fi, attr), reverse=True))
+final_model=gs.best_estimator_
+X_test=test_set.drop("median_house_value", axis=1)
+y_test=test_set["median_house_value"].copy()
+X_test_prepared=fp.transform(X_test)
+final_predictions=final_model.predict(X_test_prepared)
+final_mse=rmse(y_test, final_predictions)
+final_rmse=np.sqrt(final_mse)
+print(final_rmse)
+confidence=0.95
+squared_errors=(final_predictions-y_test)**2
+idk=np.sqrt(stats.t.interval(confidence, len(squared_errors)-1, loc=squared_errors.mean(), scale=stats.sem(squared_errors)))
+tnum=np.ceil(number*0.2)
+y_true, y_pred = np.array(y_test), np.array(final_predictions)
+acc=np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+r2=r2_score(y_test, final_predictions)
+print(acc)
+print(r2)
